@@ -4,10 +4,26 @@ import { getTickets, createTicket, initializeDatabase } from '@/lib/db'
 
 // Initialize database on first request
 let dbInitialized = false
+let dbInitializing = false
 async function ensureDbInitialized() {
-  if (!dbInitialized) {
+  if (dbInitialized) return
+  if (dbInitializing) {
+    // Wait for ongoing initialization
+    while (dbInitializing) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    return
+  }
+  dbInitializing = true
+  try {
     await initializeDatabase()
     dbInitialized = true
+    console.log('Database initialization completed')
+  } catch (error) {
+    console.error('Database initialization failed:', error)
+    throw error
+  } finally {
+    dbInitializing = false
   }
 }
 
@@ -69,10 +85,11 @@ export async function POST(request: NextRequest) {
     await ensureDbInitialized()
     const newTicket = await createTicket(ticketData)
     return NextResponse.json({ success: true, data: newTicket }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating ticket:', error)
+    const errorMessage = error?.message || 'Failed to create ticket'
     return NextResponse.json(
-      { success: false, error: 'Failed to create ticket' },
+      { success: false, error: errorMessage },
       { status: 500 }
     )
   }

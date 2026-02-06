@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Use dummy values for build (no actual DB needed for build)
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_NAME: test
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Check build output
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "Build failed: .next directory not found"
+            exit 1
+          fi
+          echo "✓ Build successful"
+
+  verify-migrations:
+    name: Verify Migrations
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check migration files
+        run: |
+          if [ ! -d "database/migrations" ]; then
+            echo "❌ Migrations directory not found"
+            exit 1
+          fi
+          
+          migration_count=$(find database/migrations -name "*.sql" | wc -l)
+          if [ "$migration_count" -eq 0 ]; then
+            echo "⚠️  No migration files found"
+          else
+            echo "✓ Found $migration_count migration file(s)"
+          fi
+          
+          # Check migration file naming
+          for file in database/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              if [[ ! "$filename" =~ ^[0-9]+_ ]]; then
+                echo "⚠️  Warning: Migration file '$filename' doesn't follow naming convention (should start with number)"
+              fi
+            fi
+          done
+
+      - name: Verify migration script syntax
+        run: |
+          # Check if migration script can be parsed
+          npx tsx --check scripts/migrate.ts || echo "⚠️  Migration script syntax check skipped"

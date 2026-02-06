@@ -7,7 +7,9 @@ let pool: mysql.Pool | null = null
 // Initialize database connection pool
 function getPool(): mysql.Pool {
   if (!pool) {
-    pool = mysql.createPool({
+    const sslRequired = process.env.DB_SSL_MODE === 'REQUIRED' || process.env.DB_SSL === 'true'
+    
+    const poolConfig: mysql.PoolOptions = {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER || 'root',
@@ -18,7 +20,22 @@ function getPool(): mysql.Pool {
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
-    })
+    }
+
+    // Configure SSL if required
+    if (sslRequired) {
+      poolConfig.ssl = {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      }
+      
+      // If CA certificate path is provided, use it
+      if (process.env.DB_SSL_CA) {
+        const fs = require('fs')
+        poolConfig.ssl.ca = fs.readFileSync(process.env.DB_SSL_CA)
+      }
+    }
+
+    pool = mysql.createPool(poolConfig)
   }
   return pool
 }
@@ -129,9 +146,13 @@ export async function createTicket(
       throw new Error('Failed to retrieve created ticket')
     }
     return ticket
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating ticket:', error)
-    throw new Error('Failed to create ticket')
+    // Include the actual error message for debugging
+    const errorMessage = error?.message || 'Unknown error'
+    const errorCode = error?.code || 'UNKNOWN'
+    console.error('Error details:', { errorMessage, errorCode, sqlState: error?.sqlState })
+    throw new Error(`Failed to create ticket: ${errorMessage} (Code: ${errorCode})`)
   } finally {
     connection.release()
   }
