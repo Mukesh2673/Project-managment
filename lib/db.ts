@@ -5,7 +5,7 @@ import mysql from 'mysql2/promise'
 let pool: mysql.Pool | null = null
 
 // Initialize database connection pool
-function getPool(): mysql.Pool {
+export function getPool(): mysql.Pool {
   if (!pool) {
     const sslRequired = process.env.DB_SSL_MODE === 'REQUIRED' || process.env.DB_SSL === 'true'
     
@@ -95,9 +95,9 @@ export async function getTicketById(id: string): Promise<Ticket | null> {
   const connection = await getPool().getConnection()
   try {
     const [rows] = await connection.query(
-      'SELECT * FROM tickets WHERE id = ?',
+      'SELECT id, title, description, status, priority, assignee, assignee_id as assigneeId, created_by as createdBy, created_at as createdAt, updated_at as updatedAt FROM tickets WHERE id = ?',
       [id]
-    ) as [Ticket[], any]
+    ) as [any[], any]
     
     if (rows.length === 0) {
       return null
@@ -127,8 +127,8 @@ export async function createTicket(
     const now = new Date()
     
     await connection.query(
-      `INSERT INTO tickets (id, title, description, status, priority, assignee, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tickets (id, title, description, status, priority, assignee, assignee_id, created_by, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         ticketData.title,
@@ -136,6 +136,8 @@ export async function createTicket(
         ticketData.status,
         ticketData.priority,
         ticketData.assignee || null,
+        ticketData.assigneeId || null,
+        ticketData.createdBy || null,
         now,
         now,
       ]
@@ -188,12 +190,16 @@ export async function updateTicket(
       updateFields.push('assignee = ?')
       values.push(ticketData.assignee || null)
     }
+    if (ticketData.assigneeId !== undefined) {
+      updateFields.push('assignee_id = ?')
+      values.push(ticketData.assigneeId || null)
+    }
     
     if (updateFields.length === 0) {
       return await getTicketById(id)
     }
     
-    updateFields.push('updatedAt = ?')
+    updateFields.push('updated_at = ?')
     values.push(new Date())
     values.push(id)
     
