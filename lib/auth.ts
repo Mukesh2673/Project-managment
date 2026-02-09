@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { User, AuthUser } from '@/types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d'
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
@@ -22,7 +22,9 @@ export function generateToken(user: AuthUser): string {
       role: user.role,
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    {
+      expiresIn: JWT_EXPIRES_IN as SignOptions['expiresIn']
+    }
   )
 }
 
