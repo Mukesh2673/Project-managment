@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       errorMessage = errorMessage
         .replace(/\\n/g, '\n') // Convert \n to actual newlines
         .split('\n')
-        .filter(line => line.trim()) // Remove empty lines
+        .filter((line: string) => line.trim()) // Remove empty lines
         .join('\n')
     }
     

@@ -162,6 +162,49 @@ export async function initializeDatabase(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
       console.log('✓ Users table created or already exists')
+
+      // Create projects table if it doesn't exist
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS projects (
+          id VARCHAR(255) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          owner_id VARCHAR(255) NOT NULL,
+          status ENUM('active', 'archived', 'completed') NOT NULL DEFAULT 'active',
+          created_at DATETIME NOT NULL,
+          updated_at DATETIME NOT NULL,
+          INDEX idx_owner_id (owner_id),
+          INDEX idx_status (status),
+          FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `)
+      console.log('✓ Projects table created or already exists')
+
+      // Update tickets table to include project_id (check if column exists first)
+      const [columns] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tickets' AND COLUMN_NAME = 'project_id'"
+      ) as [any[], any]
+      
+      if (columns.length === 0) {
+        await connection.query(`
+          ALTER TABLE tickets 
+          ADD COLUMN project_id VARCHAR(255),
+          ADD INDEX idx_project_id (project_id)
+        `).catch((err: any) => {
+          console.log('Note: Could not add project_id column:', err.message)
+        })
+        
+        // Add foreign key separately (may fail if projects table doesn't exist yet)
+        try {
+          await connection.query(`
+            ALTER TABLE tickets 
+            ADD FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+          `)
+        } catch (err: any) {
+          console.log('Note: Foreign key constraint may already exist or will be added later')
+        }
+      }
+      
       console.log('✓ Database initialized successfully')
     } catch (error: any) {
       console.error('✗ Error initializing database:', error.message)

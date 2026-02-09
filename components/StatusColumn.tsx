@@ -30,7 +30,7 @@ export default function StatusColumn({
   })
 
   return (
-    <div className="flex flex-col h-full min-w-[280px] sm:min-w-[300px] md:min-w-[320px] animate-fade-in">
+    <div className="flex flex-col h-full w-[280px] sm:w-[300px] md:w-[320px] animate-fade-in">
       <div className={`${column.color} rounded-t-xl sm:rounded-t-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-lg transition-all duration-300 hover:shadow-xl`}>
         <div className="flex justify-between items-center">
           <h2 className="text-white font-bold text-base sm:text-lg md:text-xl">

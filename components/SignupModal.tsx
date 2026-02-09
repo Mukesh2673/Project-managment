@@ -14,6 +14,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [projectName, setProjectName] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -39,11 +40,17 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
     setLoading(true)
 
     try {
-      await signup(email, password, name)
+      if (!projectName.trim()) {
+        setError('Project name is required')
+        setLoading(false)
+        return
+      }
+      await signup(email, password, name, projectName)
       onClose()
       setName('')
       setEmail('')
       setPassword('')
+      setProjectName('')
       setConfirmPassword('')
     } catch (err: any) {
       setError(err.message || 'Signup failed')
