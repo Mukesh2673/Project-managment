@@ -3,6 +3,10 @@ import { getProjectsByUserId, createProject } from '@/lib/projects'
 import { getTokenFromRequest, verifyToken } from '@/lib/auth'
 import { initializeDatabase } from '@/lib/db'
 
+// Route segment config
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 let dbInitialized = false
 async function ensureDbInitialized() {
   if (!dbInitialized) {
@@ -39,10 +43,15 @@ export async function GET(request: NextRequest) {
 
     const projects = await getProjectsByUserId(user.id)
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: projects,
     })
+    
+    // Cache control - short cache for projects
+    response.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60')
+    
+    return response
   } catch (error: any) {
     console.error('Error fetching projects:', error)
     return NextResponse.json(

@@ -4,6 +4,10 @@ import { generateToken } from '@/lib/auth'
 import { initializeDatabase } from '@/lib/db'
 import { createProject } from '@/lib/projects'
 
+// Route segment config
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 let dbInitialized = false
 async function ensureDbInitialized() {
   if (!dbInitialized) {
@@ -100,7 +104,13 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     })
+
+    // No cache for auth responses
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
 
     return response
   } catch (error: any) {

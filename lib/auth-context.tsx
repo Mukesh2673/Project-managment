@@ -70,8 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    setUser(null)
+    try {
+      // Clear user state immediately for instant UI update
+      setUser(null)
+      
+      // Call logout API
+      const response = await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include', // Ensure cookies are included
+      })
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        console.error('Logout failed:', result.error)
+      }
+      
+      // Redirect to home page (login page)
+      // Use replace to prevent back button from going to logged-in state
+      window.location.replace('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Ensure redirect even if API call fails
+      window.location.replace('/')
+    }
   }
 
   const refreshUser = async () => {

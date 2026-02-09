@@ -9,10 +9,13 @@ export interface ApiResponse<T> {
   message?: string
 }
 
-// Fetch all tickets
+// Fetch all tickets with caching
 export async function fetchTickets(): Promise<Ticket[]> {
   try {
-    const response = await fetch(API_BASE_URL)
+    const response = await fetch(API_BASE_URL, {
+      cache: 'no-store', // Always fetch fresh data for tickets
+      next: { revalidate: 0 }, // No revalidation
+    })
     const result: ApiResponse<Ticket[]> = await response.json()
     
     if (!result.success || !result.data) {

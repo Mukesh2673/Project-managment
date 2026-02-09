@@ -3,6 +3,10 @@ import { getTokenFromRequest, verifyToken } from '@/lib/auth'
 import { getUserById } from '@/lib/users'
 import { initializeDatabase } from '@/lib/db'
 
+// Route segment config
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 let dbInitialized = false
 async function ensureDbInitialized() {
   if (!dbInitialized) {
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         id: user.id,
@@ -49,6 +53,13 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
       },
     })
+    
+    // No cache for auth endpoints
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error: any) {
     console.error('Error fetching user:', error)
     return NextResponse.json(

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Ticket, TicketStatus } from '@/types'
 import { getTicketById, updateTicket, deleteTicket, initializeDatabase } from '@/lib/db'
 
+// Route segment config
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Initialize database on first request
 let dbInitialized = false
 async function ensureDbInitialized() {

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Ticket } from '@/types'
 import { getTickets, createTicket, initializeDatabase } from '@/lib/db'
 
+// Route segment config for API routes
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Initialize database on first request
 let dbInitialized = false
 let dbInitializing = false
@@ -28,11 +32,20 @@ async function ensureDbInitialized() {
 }
 
 // GET /api/tickets - Get all tickets
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await ensureDbInitialized()
     const tickets = await getTickets()
-    return NextResponse.json({ success: true, data: tickets })
+    
+    const response = NextResponse.json({ success: true, data: tickets })
+    
+    // Cache control headers for better performance
+    // Private cache since tickets are user-specific
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Error fetching tickets:', error)
     return NextResponse.json(

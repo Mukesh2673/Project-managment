@@ -3,6 +3,10 @@ import { getUserById, updateUser, deleteUser } from '@/lib/users'
 import { getTokenFromRequest, verifyToken } from '@/lib/auth'
 import { initializeDatabase } from '@/lib/db'
 
+// Route segment config
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 let dbInitialized = false
 async function ensureDbInitialized() {
   if (!dbInitialized) {

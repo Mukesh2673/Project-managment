@@ -3,13 +3,31 @@
 import { useState, useEffect } from 'react'
 import { Ticket, TicketStatus } from '@/types'
 import { STATUS_COLUMNS, PRIORITY_COLORS } from '@/lib/constants'
-import StatusColumn from '@/components/StatusColumn'
-import TicketModal from '@/components/TicketModal'
-import UserManagement from '@/components/UserManagement'
+// Components are now dynamically imported below
 import { useAuth } from '@/lib/auth-context'
 import { Plus, Filter, Loader2, LogOut, Users, User as UserIcon, Menu, X, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatus } from '@/lib/api'
+import dynamic from 'next/dynamic'
+
+// Dynamic imports for better code splitting and performance
+const StatusColumn = dynamic(() => import('@/components/StatusColumn'), {
+  loading: () => <div className="min-w-[280px] h-64 bg-slate-800/30 rounded-lg animate-pulse" />,
+  ssr: false, // Disable SSR for drag-and-drop components
+})
+
+const TicketModal = dynamic(() => import('@/components/TicketModal'), {
+  ssr: false,
+})
+
+const UserManagement = dynamic(() => import('@/components/UserManagement'), {
+  loading: () => (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+    </div>
+  ),
+  ssr: false,
+})
 
 // Auth Page Component
 function AuthPage({ 
@@ -167,7 +185,7 @@ function AuthPage({
                           <ol className="list-decimal list-inside space-y-1 text-xs">
                             <li>Go to <a href="https://console.aiven.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-100">Aiven Dashboard</a></li>
                             <li>Check if your MySQL service is <strong>RUNNING</strong> (not paused)</li>
-                            <li>If paused, click <strong>"Resume"</strong> to start the service</li>
+                            <li>If paused, click <strong>&quot;Resume&quot;</strong> to start the service</li>
                             <li>Verify the hostname matches your .env file</li>
                           </ol>
                         </div>
@@ -317,7 +335,7 @@ function AuthPage({
                   className="w-full px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 text-blue-200 rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95"
                 >
                   {isLogin 
-                    ? "Don't have an account? Sign Up"
+                    ? "Don&apos;t have an account? Sign Up"
                     : 'Already have an account? Sign In'}
                 </button>
               </div>
@@ -463,8 +481,9 @@ export default function Home() {
     : tickets.filter(ticket => ticket.priority === filterPriority)
 
   const handleLogout = async () => {
-    await logout()
     setShowUserManagement(false)
+    await logout()
+    // logout() will handle the redirect
   }
 
   if (authLoading || loading) {
